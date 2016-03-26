@@ -26,8 +26,6 @@ class Flowplayer5_Settings {
 	*/
 	public function __construct() {
 
-		$this->options  = get_option( 'fp5_settings_general', array() );
-
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_filter( 'fp5_register_settings', array( $this, 'hide_options_conditionally' ) );
 
@@ -39,9 +37,9 @@ class Flowplayer5_Settings {
 	 * @since 2.0
 	 * @return array
 	*/
-	public function get_defaults() {
+	public function get_defaults( $options ) {
 		$defaults = array();
-		if ( empty( $this->options ) ) {
+		if ( empty( $options ) ) {
 			$defaults['fp_version'] = 'fp6';
 		} else {
 			$defaults['fp_version'] = 'fp5';
@@ -57,11 +55,7 @@ class Flowplayer5_Settings {
 	 * @return mixed
 	*/
 	public function get( $key, $default = false ) {
-		if ( false === $default ) {
-			$defaults = $this->get_defaults();
-			$default = $defaults[ $key ];
-		}
-		$value = ! empty( $this->options[ $key ] ) ? $this->options[ $key ] : $default;
+		$value = ! empty( $this->get_all()[ $key ] ) ? $this->get_all()[ $key ] : $default;
 		return apply_filters( 'fp5_setting_' . $key, $value );
 	}
 
@@ -72,9 +66,10 @@ class Flowplayer5_Settings {
 	 * @return array
 	*/
 	public function get_all() {
+		$options = get_option( 'fp5_settings_general', array() );
 		$options = wp_parse_args(
-			$this->options,
-			$this->get_defaults()
+			$options,
+			$this->get_defaults( $options )
 		);
 		return apply_filters( 'fp5_settings', $options );
 	}
@@ -148,7 +143,7 @@ class Flowplayer5_Settings {
 			return $input;
 		}
 
-		$saved = $this->options;
+		$saved = $this->get_all();
 		$settings = $this->get_registered_settings();
 		if ( ! is_array( $saved ) ) {
 			$saved = array();
@@ -431,12 +426,12 @@ class Flowplayer5_Settings {
 	 *
 	 * @since 2.0
 	 * @param array $args Arguments passed by the setting
-	 * @global $this->options Array of all the Flowplayer5 Options
+	 * @global $this->get_all() Array of all the Flowplayer5 Options
 	 * @return void
 	 */
 	function checkbox_callback( $args ) {
 
-		$checked = isset( $this->options[ $args['id'] ] ) ? checked( 1, $this->options[ $args['id'] ], false ) : '';
+		$checked = isset( $this->get_all()[ $args['id'] ] ) ? checked( 1, $this->get_all()[ $args['id'] ], false ) : '';
 		$html = '<input type="checkbox" id="fp5_settings_general[' . $args['id'] . ']" name="fp5_settings_general[' . $args['id'] . ']" value="1" ' . $checked . '/>';
 		$html .= '<label for="fp5_settings_general[' . $args['id'] . ']"> '  . $args['desc'] . '</label>';
 
@@ -450,13 +445,13 @@ class Flowplayer5_Settings {
 	 *
 	 * @since 2.0
 	 * @param array $args Arguments passed by the setting
-	 * @global $this->options Array of all the Flowplayer5 Options
+	 *
 	 * @return void
 	 */
 	function text_callback( $args ) {
 
-		if ( isset( $this->options[ $args['id'] ] ) ) {
-			$value = $this->options[ $args['id'] ];
+		if ( isset( $this->get_all()[ $args['id'] ] ) ) {
+			$value = $this->get_all()[ $args['id'] ];
 		} else {
 			$value = isset( $args['std'] ) ? $args['std'] : '';
 		}
@@ -475,13 +470,13 @@ class Flowplayer5_Settings {
 	 *
 	 * @since 2.0
 	 * @param array $args Arguments passed by the setting
-	 * @global $this->options Array of all the Flowplayer5 Options
+	 *
 	 * @return void
 	 */
 	function password_callback( $args ) {
 
 		$size = ( isset( $args['size'] ) && ! is_null( $args['size'] ) ) ? $args['size'] : 'regular';
-		$desc = empty( $this->options['password'] ) ? $args['desc'] : __( 'Your password is saved. For security reasons it will not be displayed here.', 'flowplayer5' );
+		$desc = empty( $this->get_all()['password'] ) ? $args['desc'] : __( 'Your password is saved. For security reasons it will not be displayed here.', 'flowplayer5' );
 		$html = '<input type="password" class="' . $size . '-text" id="fp5_settings_general[' . $args['id'] . ']" name="fp5_settings_general[' . $args['id'] . ']"/>';
 		$html .= '<label for="fp5_settings_general[' . $args['id'] . ']"> '  . '<br>' . $desc . '</label>';
 
@@ -495,13 +490,13 @@ class Flowplayer5_Settings {
 	 *
 	 * @since 2.0
 	 * @param array $args Arguments passed by the setting
-	 * @global $this->options Array of all the Flowplayer5 Options
+	 *
 	 * @return void
 	 */
 	function select_callback( $args ) {
 
-		if ( isset( $this->options[ $args['id'] ] ) ) {
-			$value = $this->options[ $args['id'] ];
+		if ( isset( $this->get_all()[ $args['id'] ] ) ) {
+			$value = $this->get_all()[ $args['id'] ];
 		} else {
 			$value = isset( $args['std'] ) ? $args['std'] : '';
 		}
@@ -526,13 +521,13 @@ class Flowplayer5_Settings {
 	 *
 	 * @since 2.0
 	 * @param array $args Arguements passed by the setting
-	 * @global $this->options Array of all the Flowplayer5 Options
+	 *
 	 * @return void
 	 */
 	function upload_callback( $args ) {
 
-		if ( isset( $this->options[ $args['id'] ] ) ) {
-			$value = $this->options[ $args['id'] ];
+		if ( isset( $this->get_all()[ $args['id'] ] ) ) {
+			$value = $this->get_all()[ $args['id'] ];
 		} else {
 			$value = isset( $args['std'] ) ? $args['std'] : '';
 		}

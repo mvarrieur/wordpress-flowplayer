@@ -25,9 +25,6 @@ class Flowplayer5_Sanitize_Settings {
 	 * @return void
 	*/
 	public function __construct() {
-
-		$this->options  = get_option( 'fp5_settings_general', array() );
-
 		add_filter( 'fp5_settings_sanitize_checkbox', array( $this, 'sanitize_checkbox' ), 10, 2 );
 		add_filter( 'fp5_settings_sanitize_text', array( $this, 'sanitize_text' ), 10, 2 );
 		add_filter( 'fp5_settings_sanitize_password', array( $this, 'sanitize_password' ), 10, 2 );

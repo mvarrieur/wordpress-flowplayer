@@ -29,52 +29,63 @@ class Flowplayer5_Styles_Scripts {
 	 *
 	 * @since    1.0.0
 	 */
-	public function __construct() {
+	public function __construct( $atts = array() ) {
+		$plugin                    = Flowplayer5::get_instance();
+		$plugin_version            = $plugin->get_plugin_version();
+		$player_version            = $plugin->get_player_version();
+		$this->atts = $atts;
+		$this->options = $this->get_options( $atts );
 		// Load public-facing style sheet and JavaScript.
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_styles_script' ) );
+		add_action( 'wp_enqueue_scripts', array( $this, 'set_shortcode_args' ) );
+	}
+
+	function set_shortcode_args() {
+		if ( empty( $this->atts ) ) {
+			$flowplayer_shortcode      = new Flowplayer5_Shortcode();
+			$atts = $flowplayer_shortcode->flowplayer_shortcode_atts();
+		}
+		if ( isset( $atts['playlist'] ) ) {
+			$playlist_id = Flowplayer5_Playlist::wp_get_split_term( $atts['playlist'] );
+			$atts = Flowplayer5_Playlist::get_videos_by_id( $playlist_id );
+		} else {
+			$atts[ 'id' . $atts['id'] ] = self::get_shortcode_attr( $atts );
+		}
+		$this->atts = $atts;
 	}
 
 	public function enqueue_styles_script() {
-		$options = $this->get_options();
-		if ( $options['has_shortcode'] ) {
-			$this->register_styles( $options );
-			$this->enqueue_styles( $options );
-			$this->register_scripts( $options );
-			$this->enqueue_scripts( $options );
+		if ( $this->options['has_shortcode'] ) {
+			$this->register_styles( $this->options );
+			$this->enqueue_styles( $this->options );
+			$this->register_scripts( $this->options );
+			$this->enqueue_scripts( $this->options );
 		}
 	}
 
-	public function get_options() {
-		$plugin                   = Flowplayer5::get_instance();
-		$plugin_version           = $plugin->get_plugin_version();
-		$player_version           = $plugin->get_player_version();
-		$flowplayer_shortcode     = new Flowplayer5_Shortcode();
-		$has_flowplayer_shortcode = $flowplayer_shortcode->flowplayer_shortcode_atts();
-		$flowplayer_output        = new Flowplayer5_Output();
-		$shortcode_attr           = $flowplayer_output->video_atts( $has_flowplayer_shortcode );
-		$settings                 = fp5_get_settings();
+	public function get_options( $atts ) {
 
 		$options = array(
-			'cdn'            => isset( $settings['cdn_option'] ) ? $settings['cdn_option'] : false,
-			'key'            => ! empty ( $settings['key'] ) ? $settings['key'] : '',
-			'fp_dir'         => ! empty ( $settings['directory'] ) ? $settings['directory'] : '',
-			'fp_6'           => ( isset( $settings['fp_version'] ) && 'fp6' === $settings['fp_version'] ) ? '-v6' : '',
-			'suffix'         => defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min',
-			'hls_dep'        => defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? array( 'flowplayer5-script', 'hlsjs' ) : array( 'flowplayer5-script' ),
-			'is_hls'         => $flowplayer_shortcode->has_feature( 'application/x-mpegurl', $flowplayer_shortcode->get_video_meta_value( 'formats', $shortcode_attr ) ) && $flowplayer_shortcode->get_video_meta_value( 'hls_plugin', $shortcode_attr ),
-			'is_lightbox'    => $flowplayer_shortcode->get_video_meta_value( 'lightbox', $shortcode_attr ),
-			'has_shortcode'  => $has_flowplayer_shortcode,
-			'qualities'      => $flowplayer_shortcode->get_video_qualities( $shortcode_attr ),
-			'asf_js'         => ! empty ( $settings['asf_js'] ) ? $settings['asf_js'] : false,
-			'asf_css'        => ! empty ( $settings['asf_css'] ) ? $settings['asf_css'] : false,
-			'vast_js'        => ! empty ( $settings['vast_js'] ) ? $settings['vast_js'] : false,
-			'vast_css'       => ! empty ( $settings['vast_css'] ) ? $settings['vast_css'] : false,
-			'qs_dir'         => ! empty ( isset( $settings['fp_version'] ) && 'fp6' === $settings['fp_version'] ) ? 'quality-selector/flowplayer.' : 'drive/',
-			'plugin_version' => $plugin_version,
-			'player_version' => $player_version,
+			'cdn'                  => isset( $settings['cdn_option'] ) ? $settings['cdn_option'] : false,
+			'key'                  => ! empty ( $settings['key'] ) ? $settings['key'] : '',
+			'fp_dir'               => ! empty ( $settings['directory'] ) ? $settings['directory'] : '',
+			'asf_js'               => ! empty ( $settings['asf_js'] ) ? $settings['asf_js'] : false,
+			'asf_css'              => ! empty ( $settings['asf_css'] ) ? $settings['asf_css'] : false,
+			'vast_js'              => ! empty ( $settings['vast_js'] ) ? $settings['vast_js'] : false,
+			'vast_css'             => ! empty ( $settings['vast_css'] ) ? $settings['vast_css'] : false,
+			'suffix'               => defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min',
+			'hls_dep'              => defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? array( 'flowplayer5-script', 'hlsjs' ) : array( 'flowplayer5-script' ),
+			'is_hls'               => $flowplayer_shortcode->get_attr_value( 'application/x-mpegurl', $atts ) && $flowplayer_shortcode->get_attr_value( 'hls_plugin', $atts ),
+			'is_lightbox'          => $flowplayer_shortcode->get_attr_value( 'lightbox', $atts ),
+			'has_shortcode'        => $has_flowplayer_shortcode,
+			'qualities'            => $flowplayer_shortcode->get_video_qualities( $atts ),
+			'qs_dir'               => isset( $settings['fp_version'] ) && 'fp6' === $settings['fp_version'] ? 'quality-selector/flowplayer.' : 'drive/',
+			'fp_6'                 => isset( $settings['fp_version'] ) && 'fp6' === $settings['fp_version'] ? '-v6' : '',
+			'plugin_version'       => $plugin_version,
+			'player_version'       => $player_version,
+			'flowplayer_directory' => trailingslashit( $this->get_flowplayer_directory( $settings ) ),
+			'assets_directory'     => trailingslashit( $this->get_assets_directory( $settings ) ),
 		);
-		$options['flowplayer_directory'] = trailingslashit( $this->get_flowplayer_directory( $options ) );
-		$options['assets_directory']     = trailingslashit( $this->get_assets_directory( $options ) );
 
 		return $options;
 	}
